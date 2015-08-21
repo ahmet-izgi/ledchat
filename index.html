@@ -1,0 +1,233 @@
+<html>
+<head>
+	<title>Chat with socket.io and node.js</title>
+	<style>
+		#chat{
+			height:60px;
+			width:60px;
+		}
+		#contentWrap{
+			display: none;
+		}
+		#chatWrap{
+			background-color:#ffffff;
+			float: left;
+			border: 1px #000 solid;
+		}
+		.error{
+			color: red;
+		}
+		.whisper{
+			color: gray;
+			font-style: italic;
+		}
+	</style>
+	
+	<link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+	<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+
+</head>
+<body>
+
+    <!-- panel content goes here -->
+    <div data-role="page" id="main"  data-add-back-btn="true">
+          <!--<div data-role="panel" id="myPanel"> 
+            <h2>Panel Header</h2>
+            <a href="#pageone" data-rel="close" class="ui-btn ui-btn-inline ui-corner-all ui-btn-a ui-icon-delete ui-btn-icon-left">Close panel</a>
+        </div>  -->
+        <div data-role="header"  data-position="fixed">
+            <h1>LedChat</h1>
+            <!-- <a href="#myPanel" data-icon="home">Home</a> -->
+         <!--    <a href="#" class="ui-btn ui-corner-all ui-shadow ui-icon-search ui-btn-icon-left"></a> -->
+
+        </div><!-- /header -->
+
+        <div role="main" class="ui-content">
+                <h2>Etkinlikler</h2>
+            <div id="content">
+
+            </div>
+        </div><!-- /content -->
+
+        <div data-role="footer" data-position="fixed">
+           <h1>Etkinlik Seç</h1>
+        </div> <!--/footer -->
+    </div><!-- /page -->
+    
+    
+    <!-- Start of second page -->
+    <div data-role="page" id="etkinlik">
+
+        <div data-role="header">
+            <a href="#" data-icon="back" data-rel="back" title="Go back"  data-transition="slide" data-direction="reverse">Back</a>
+            <h1>Etkinlik</h1>
+        </div><!-- /header -->
+
+        <div role="main" class="ui-content" id="etkinlikContent">
+
+        </div>
+        <div data-role="main" class="ui-content">
+            <form method="post">
+                <fieldset class="ui-field-contain">
+                    <label for="tribun">Tribün</label>
+                    <select name="tribun" id="tribun">
+                        <option value="dogu">Doğu</option>
+                        <option value="bati">Batı</option>
+                        <option value="kuzey">Kuzey</option>
+                        <option value="guney">Güney</option>
+                    </select>
+                </fieldset>
+                <fieldset class="ui-field-contain">
+                    <label for="blok">Blok</label>
+                    <select name="blok" id="blok">
+                        <option value="mon">401</option>
+                        <option value="tue">402</option>
+                        <option value="wed">403</option>
+                        <option value="wed">404</option>
+                        <option value="wed">405</option>
+                        <option value="wed">406</option>
+                        <option value="wed">407</option>
+                    </select>
+                </fieldset>
+                <fieldset class="ui-field-contain">
+                    <label for="sira">Sıra</label>
+                    <select name="sira" id="sira">
+                        <option value="mon">1</option>
+                        <option value="tue">2</option>
+                        <option value="wed">3</option>
+                        <option value="wed">4</option>
+                        <option value="wed">5</option>
+                        <option value="wed">6</option>
+                        <option value="wed">7</option>
+                    </select>
+                </fieldset>
+                <fieldset class="ui-field-contain">
+                    <label for="koltuk">Koltuk</label>
+                    <input type="number" name="koltuk" id="koltuk">
+                </fieldset>
+                <input type="submit" value="Kaydet">
+            </form>
+        </div>
+        <!-- /content -->
+
+        <!--<div data-role="footer">
+            <h4>Page Footer</h4>
+        </div><!-- /footer -->
+    </div>
+
+
+    <!--
+	<div id="nickWrap">
+		<p id="nickError"></p>
+		<form id="setNick">
+			<input size="10" id="nickname"></input>
+			<input type="submit" value="yolla"></input>
+		</form>
+	</div>
+
+	<div id="contentWrap">
+		<div id="chatWrap">
+			<div id="chat"></div>
+		</div>
+		<div id="users"></div>
+	</div> -->
+
+    <script>
+        //var mongoose = require('mongoose');
+        var socket = io.connect();
+        
+/*        mongoose.connect('mongodb://localhost/ledchatlokal', function(err){
+            if(err){
+                console.error('No connection to ledchatlokal');
+            } else {
+                console.log('database connection successfully');
+            }
+        });*/
+        
+        function events(data){
+           $.mobile.pageContainer.pagecontainer( "change", "#etkinlik", { eventId: data, transition: 'slide' } );
+        }
+        
+        $( document ).on( "pagebeforechange" , function ( event, data ) {
+            if ( data.toPage[0].id == "etkinlik" ) {
+                var eventId = data.options.eventId;
+                socket.emit('getEvent', eventId);    
+            }
+        });
+        
+        function listEvents(data) {
+                //Create the listview if not created
+            $('#content').append("<ul id='list' data-role='listview' data-inset='true'></ul>");
+            listCreated = true;
+            $('#content').trigger("create");
+            for(var i=0; i < data.length ; i++){
+                $('#list').append("<li><a data-transition='slide' href=javascript:events("+data[i].event.eventId+");><h3>"+ data[i].event.name +"</h3><p>"+data[i].event.type+"</p></a></li>");
+                $('#list').listview("refresh");                            
+            }
+        }
+        
+        function showEvent(data){
+            $('#etkinlikContent').html('<h3>'+data.name+'</h3>');
+            $('#etkinlikContent').append('<p>Tarih: '+data.date+'</p>');
+            $('#etkinlikContent').append('<p>Yer: '+data.location+'</p>');
+        }
+    </script>
+	
+	<script>
+		jQuery(function($){
+			
+			var $nickForm = $('#setNick');
+			var $nickError = $('#nickError');
+			var $nickBox = $('#nickname');
+			var $users = $('#users');
+			var $messageForm = $('#send-message');
+			var $messageBox = $('#message');
+			var $chat = $('#chat');
+			var $chatWrap = $('#chatWrap');
+			var userId = 0;
+			
+			$nickForm.submit(function(e){
+				e.preventDefault();
+				socket.emit('new user', $nickBox.val(), function(data){
+					if(data){
+						$('#nickWrap').hide();
+						$('#contentWrap').show();
+					} else{
+						$nickError.html('That username is already taken!  Try again.');
+					}
+				});
+				$nickBox.val('');
+			});
+			
+			socket.on('userPacket', function(data){
+				$chat.append('<span class="msg"><b>USERID' + data + "</span><br/>");
+				userId = data;
+			});			
+			
+			socket.on('light_packet', function(data){
+				$chat.append('<span class="msg"><b>' + ' ' + userId + ' ' + data + ' '+ data[userId] + "</span><br/>")
+				if(data[userId] == 0){
+					$chatWrap.css('backgroundColor','#FF0000');
+				} else if(data[userId] == 1){
+					$chatWrap.css('backgroundColor','#009933');
+				}
+			});
+            
+            $.mobile.loading("show");
+            socket.emit('getEventList');
+            
+            socket.on('showEvent', function(data){
+                showEvent(data);
+            });
+            
+            socket.on('eventList',function(data){
+                listEvents(data);
+                $.mobile.loading("hide");
+            });
+            
+		});
+	</script>
+</body>
+</html>
